@@ -7,4 +7,4 @@ edition = "2018"
 [dependencies]
 juniper = { git = "https://github.com/graphql-rust/juniper.git" , default-features = true, features = ["expose-test-schema", "serde_json"]}
 juniper_rocket = { git = "https://github.com/graphql-rust/juniper.git" }
-rocket = "0.4.2"
+rocket = "0.4.7"
