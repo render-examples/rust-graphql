@@ -2,9 +2,9 @@
 name = "juniper_graphql"
 version = "0.1.0"
 authors = ["Render Developers <dev@render.com>"]
-edition = "2018"
+edition = "2024"
 
 [dependencies]
-juniper = { git = "https://github.com/graphql-rust/juniper.git" , default-features = true, features = ["expose-test-schema", "serde_json"]}
-juniper_rocket = { git = "https://github.com/graphql-rust/juniper.git" }
-rocket = "0.4.2"
+juniper = "0.17"
+juniper_rocket = "0.10"
+rocket = "0.5"

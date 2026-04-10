@@ -1,44 +1,59 @@
-#![feature(decl_macro, proc_macro_hygiene)]
-
 use rocket::response::content;
 use rocket::State;
 
-use juniper::tests::model::Database;
-use juniper::tests::schema::Query;
-use juniper::{EmptyMutation, RootNode};
+use juniper::{graphql_object, EmptyMutation, EmptySubscription, RootNode};
 
-type Schema = RootNode<'static, Query, EmptyMutation<Database>>;
+struct Context;
+impl juniper::Context for Context {}
 
-#[rocket::get("/")]
-fn graphiql() -> content::Html<String> {
-    juniper_rocket::playground_source("/graphql")
+struct Query;
+
+#[graphql_object(context = Context)]
+impl Query {
+    fn hello() -> &'static str {
+        "Hello, World!"
+    }
 }
 
-#[rocket::get("/graphql?<request>")]
-fn get_graphql_handler(
-    context: State<Database>,
+type Schema = RootNode<Query, EmptyMutation<Context>, EmptySubscription<Context>>;
+
+#[rocket::get("/")]
+fn graphiql() -> content::RawHtml<String> {
+    juniper_rocket::graphiql_source("/graphql", None)
+}
+
+#[rocket::get("/graphql?<request..>")]
+async fn get_graphql_handler(
+    context: &State<Context>,
     request: juniper_rocket::GraphQLRequest,
-    schema: State<Schema>,
+    schema: &State<Schema>,
 ) -> juniper_rocket::GraphQLResponse {
-    request.execute(&schema, &context)
+    request.execute(schema, context).await
 }
 
 #[rocket::post("/graphql", data = "<request>")]
-fn post_graphql_handler(
-    context: State<Database>,
+async fn post_graphql_handler(
+    context: &State<Context>,
     request: juniper_rocket::GraphQLRequest,
-    schema: State<Schema>,
+    schema: &State<Schema>,
 ) -> juniper_rocket::GraphQLResponse {
-    request.execute(&schema, &context)
+    request.execute(schema, context).await
 }
 
-fn main() {
-    rocket::ignite()
-        .manage(Database::new())
-        .manage(Schema::new(Query, EmptyMutation::<Database>::new()))
+#[rocket::main]
+async fn main() -> Result<(), rocket::Error> {
+    let _rocket = rocket::build()
+        .manage(Context)
+        .manage(Schema::new(
+            Query,
+            EmptyMutation::<Context>::new(),
+            EmptySubscription::<Context>::new(),
+        ))
         .mount(
             "/",
             rocket::routes![graphiql, get_graphql_handler, post_graphql_handler],
         )
-        .launch();
+        .launch()
+        .await?;
+    Ok(())
 }
